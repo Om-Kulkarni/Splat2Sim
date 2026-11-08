@@ -2,7 +2,7 @@
 name = "splat2sim"
 version = "0.1.0"
 license = "MIT"
-description = "Splat2Sim: handheld D455 Capture -> Isaac Sim 6.1 Scene + Task environment"
+description = "Splat2Sim: handheld OAK-D Pro W (or D455) Capture -> Isaac Sim 6.1 Scene + Task environment"
 requires-python = ">=3.12"
 dependencies = ["pydantic>=2.6", "pyyaml>=6.0", "numpy>=1.26"]
 

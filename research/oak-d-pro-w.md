@@ -94,3 +94,13 @@ Sources: [Record Video node](https://docs.luxonis.com/software-v3/depthai/deptha
 3. Depth encoding/units, topic names, `camera_info` D after undistortion, and depth/RGB alignment in the driver.
 4. Distortion coefficient count of CAM_A.
 5. IMU actual rates and timestamp skew vs images.
+
+## Verified on hardware (2026-11-08, ROS 2 Jazzy, `ros-jazzy-depthai-ros-driver-v3` 3.2.1 from the main ROS repo, no testing repo needed; depthai Python 3.12.0)
+
+- Device: OAK-D-PRO-W, colour **IMX378 (rolling shutter)**, mono 2x OV9282, BNO086 IMU, USB SUPER. CAM_A calibration: Perspective model, 14 distortion coeffs, max |k| ~12.6 (strongly distorted).
+- Topics: `/oak/rgb/image_raw` (bgr8), `/oak/rgb/camera_info`, `/oak/stereo/image_raw` (**16UC1 mm, aligned to RGB, same size as RGB**), `/oak/stereo/camera_info`, `/oak/imu/data` (united `Imu`, ~400 Hz with gyro 400/accel 480), `/tf_static` (transient local, from calibration; IMU frame axes equal the colour optical axes, accel z ~ +9.87 with the lens pointing up). Frame ids `oak_rgb_camera_optical_frame`, `oak_imu_frame`.
+- `rgb.i_undistorted: true` -> `camera_info` D = 14 zeros, K for the cropped, undistorted image (HFOV ~82 deg). Depth follows the same geometry (identical K on `/oak/stereo/camera_info`). Depth edges line up with the colour edges in the ingest preview overlay.
+- Driver params accept `$(env VAR default)` in the params YAML (typed correctly); `r_laser_dot_intensity` / `r_floodlight_intensity` live under `driver.`; `driver.r_*` and `rgb.r_*` params applied (checked with `ros2 param get`).
+- **IR dots are not visible in the colour image**: static scene, 100-frame temporal means, projector 1.0 vs 0.0 -> identical mean brightness (51.21 vs 51.23) and no extra high-frequency structure.
+- Rates: plain DepthAI Python: 1280x720 colour 30 Hz alone; stereo aligned to 1280x720 = 29.5 Hz with a 640x400 mono pair, **~14.5 Hz with 1280x800 mono** (LR-check + subpixel; device compute limit). Through the ROS driver at the time of testing (laptop on battery, heavy disk I/O from other software): 640x360 colour + depth = 30/30 Hz, 960x540 ~12 Hz, 1280x720 ~7 Hz (rgb and depth equal; throughput roughly constant at ~6 MP/s; not CPU bound, not disk bound, not IR). Earlier in the session 1280x720 gave 30 Hz colour / 15 Hz depth, so the ROS path is load sensitive. Unresolved.
+- Stale-device message `Device ... has crashed` appears after a container is SIGKILLed; run.sh now waits for the driver to exit. The container needs `--net=host` (libusb hotplug uses netlink uevents) or the re-enumerated device is not found.

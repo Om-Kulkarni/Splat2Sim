@@ -2,7 +2,7 @@
 
 ## Glossary
 
-- **Capture**: A raw handheld walk-around recording of the lab from a RealSense D455 (color, depth, IMU), stored as a bag/MCAP file.
+- **Capture**: A raw handheld walk-around recording of the lab from a depth camera with colour, aligned depth and IMU (default: Luxonis OAK-D Pro W; RealSense D455 also supported), stored as a ROS 2 bag/MCAP file. Ingest turns it into pinhole (undistorted) colour + depth frames.
 - **Scene**: The reconstructed lab as USD — a photoreal visual layer plus a simplified collision layer — loadable in Isaac Sim / Isaac Lab. Static background only: nothing in it moves.
 - **Task environment**: A Scene plus robot(s) and manipulated objects, configured for training or evaluating a policy.
 - **Manipulated object**: A movable rigid object added to a Scene from a separate source; never carved out of the Scene's reconstruction (in v1).

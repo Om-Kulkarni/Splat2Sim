@@ -1,0 +1,71 @@
+# DepthAI ROS driver (v3) parameters for the OAK-D Pro W capture. Used by docker/capture/run.sh when R2S_CAMERA=oak.
+#
+# Edit this file to tune the camera; scripts/capture.sh mounts it into the container, no image rebuild needed.
+# Every `$(env R2S_OAK_X default)` can also be overridden per run from the shell, e.g.
+#     R2S_OAK_EXPOSURE_US=3000 R2S_OAK_ISO=800 ./scripts/capture.sh --preview
+# or point R2S_OAK_PARAMS at your own copy of this file.  Full parameter list of the driver:
+#     docker run --rm -it --privileged -v /dev:/dev --net=host r2s-capture shell      (then: ros2 param list /oak)
+# MEASURED on the OAK-D Pro W (USB3, ROS 2 Jazzy, depthai-ros 3.2): 640x360 colour + aligned depth runs at a steady 30 Hz;
+# 960x540 ran ~12 Hz and 1280x720 ~7 Hz through the ROS driver (the same device does 1280x720@30 + depth@30 with the plain
+# DepthAI Python API, so the limit is in the ROS publish path / this host). Raise R2S_OAK_RGB_WIDTH/HEIGHT (e.g. 1280/720) and
+# check the rates with `capture.sh --preview` + the take summary before relying on it.
+# Rules of the capture protocol (docs/capture-guide.md): manual exposure and white balance (no flicker in the
+# reconstruction), colour exposure short (rolling shutter!), depth aligned to colour at the colour size,
+# colour undistorted on the device (the pipeline assumes a pinhole camera).
+/oak:
+  ros__parameters:
+    pipeline_gen:
+      i_pipeline_type: rgbd        # RGB + stereo depth aligned to RGB (+ IMU)
+      i_nn_type: none
+      i_enable_rgbd: false         # no on-device point cloud / rgbd sync node (not recorded)
+      i_enable_imu: true
+    driver:
+      i_usb_speed: $(env R2S_OAK_USB_SPEED SUPER)
+      i_enable_ir: true
+      r_laser_dot_intensity: $(env R2S_OAK_DOT 0.6)      # 0..1 IR dot projector (helps depth on blank walls/floors); RGB does not see it
+      r_floodlight_intensity: $(env R2S_OAK_FLOOD 0.0)   # 0..1 IR flood (only for dark rooms)
+      i_publish_tf_from_calibration: true
+    rgb:
+      i_width: $(env R2S_OAK_RGB_WIDTH 640)
+      i_height: $(env R2S_OAK_RGB_HEIGHT 360)
+      i_fps: $(env R2S_OAK_RGB_FPS 30.0)
+      i_undistorted: $(env R2S_OAK_UNDISTORT true)   # on-device undistortion; false = record raw lens and let ingest undistort
+      i_synced: true
+      # manual exposure / ISO / white balance. IMX378 has a ROLLING shutter: keep the exposure short (<= 4 ms).
+      r_set_man_exposure: $(env R2S_OAK_MANUAL_EXPOSURE true)
+      r_exposure: $(env R2S_OAK_EXPOSURE_US 4000)     # microseconds
+      r_iso: $(env R2S_OAK_ISO 600)                   # 100..1600
+      r_set_man_whitebalance: $(env R2S_OAK_MANUAL_WB true)
+      r_whitebalance: $(env R2S_OAK_WB_K 5000)        # Kelvin
+    # Mono pair = stereo input size. 640x400 keeps the on-device stereo at 30 fps (aligned to the colour size below);
+    # 1280x800 (best depth accuracy) tops out at ~14.5 fps on the RVC2 (measured), so depth is then paired with every 2nd colour frame.
+    left:
+      i_width: $(env R2S_OAK_MONO_WIDTH 640)
+      i_height: $(env R2S_OAK_MONO_HEIGHT 400)
+      i_fps: $(env R2S_OAK_STEREO_FPS 30.0)
+    right:
+      i_width: $(env R2S_OAK_MONO_WIDTH 640)
+      i_height: $(env R2S_OAK_MONO_HEIGHT 400)
+      i_fps: $(env R2S_OAK_STEREO_FPS 30.0)
+    stereo:
+      i_aligned: true              # depth in the RGB camera geometry (aligned on the device)
+      i_width: $(env R2S_OAK_RGB_WIDTH 640)    # depth output size = colour size
+      i_height: $(env R2S_OAK_RGB_HEIGHT 360)
+      i_fps: $(env R2S_OAK_STEREO_FPS 30.0)
+      i_synced: true
+      i_depth_preset: $(env R2S_OAK_STEREO_PRESET ROBOTICS)   # DEFAULT | FACE | HIGH_DETAIL | ROBOTICS
+      i_lr_check: $(env R2S_OAK_LR_CHECK true)
+      i_subpixel: $(env R2S_OAK_SUBPIXEL true)
+      i_extended_disp: $(env R2S_OAK_EXTENDED_DISP false)    # true: min depth ~0.35 m instead of ~0.7 m, but worse far range
+      i_enable_threshold_filter: true
+      i_threshold_filter_min_range: $(env R2S_OAK_DEPTH_MIN_MM 300)    # mm
+      i_threshold_filter_max_range: $(env R2S_OAK_DEPTH_MAX_MM 6000)   # mm
+    imu:
+      i_message_type: IMU            # united accel+gyro sensor_msgs/Imu (like the RealSense unite_imu_method)
+      i_sync_method: LINEAR_INTERPOLATE_ACCEL
+      i_acc_freq: $(env R2S_OAK_ACCEL_HZ 480)
+      i_gyro_freq: $(env R2S_OAK_GYRO_HZ 400)
+      i_enable_rotation: false       # on-chip fusion orientation is not used
+      i_enable_mag: false
+      i_batch_report_threshold: 1
+      i_max_batch_reports: 10
