@@ -109,6 +109,10 @@ def run(capture: Path, out: Path, opt: Options) -> dict:
         "fx": intr.fx, "fy": intr.fy, "cx": intr.cx, "cy": intr.cy, "width": intr.width, "height": intr.height,
         "distortion_model": intr.distortion_model, "distortion_coeffs": intr.distortion,
         "depth_scale_m": DEPTH_SCALE_M, "source": intr.source,
+        "undistorted_in_ingest": bool(src.undistorted_in_ingest),
+        **({"original_camera_model": src.original_intrinsics["model"],
+            "original_distortion_coeffs": src.original_intrinsics["distortion_coeffs"]}
+           if src.undistorted_in_ingest and src.original_intrinsics else {}),
     }, indent=2))
 
     # IMU
@@ -159,6 +163,9 @@ def run(capture: Path, out: Path, opt: Options) -> dict:
         "sharpness_median": float(np.median(sharp)),
         "imu": imu_info, "gt_poses": gt_info,
         "camera_serial": src.camera_serial, "camera_firmware": src.camera_firmware,
+        "camera": getattr(src, "capture_info", None) or None,  # product/serial/driver from capture_info.json, if recorded
+        "undistorted_in_ingest": bool(src.undistorted_in_ingest),
+        "camera_distortion_model": (src.original_intrinsics or {}).get("model", intr.distortion_model),
         "source": src.meta(),
         "ingest_seconds": round(time.time() - t_start, 1),
     }

@@ -80,7 +80,9 @@ def register_depth_to_color(
     Nearest surface wins when several depth pixels land on one colour pixel (z-buffer). When one depth pixel
     spans several colour pixels (colour focal length larger) each point is splatted over its footprint so no
     holes appear.
-    Lens distortion is ignored (D400 streams are rectified and the stored coefficients are zero).
+    Lens distortion is ignored: ``depth`` and ``K_color`` must describe ideal pinhole images. RealSense D400 depth
+    streams are rectified (stored coefficients zero) but a colour stream is not necessarily (OAK, wide-angle colour
+    sensors): the MCAP reader undistorts the colour frame first (``undistort.py``) and passes the resulting pinhole K.
     """
     cw, ch = color_size
     out = np.zeros((ch, cw), dtype=np.uint16)

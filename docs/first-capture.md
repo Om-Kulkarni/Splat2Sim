@@ -1,6 +1,6 @@
 # First real Capture: checklist (Monday 2026-10-19)
 
-Handheld D455 walk-around of the lab: FR3 + Robotiq 2F-85 on a pedestal next to a table, printed ChArUco board on the table, 3D-printed cubes.
+Handheld walk-around (OAK-D Pro W; D455 via `R2S_CAMERA=realsense`) of the lab: FR3 + Robotiq 2F-85 on a pedestal next to a table, printed ChArUco board on the table, 3D-printed cubes.
 Read `docs/capture-guide.md` for the camera/walking details; this page is the order of work and the numbers that matter.
 Everything below was dry-run on a synthetic Capture with ground truth (`tools/synth_capture/`, `labs/synth.yaml`); numbers marked (synth) come from it.
 
@@ -15,7 +15,7 @@ df -h ~/real2sim-data | tail -1                                 # a 3 min take i
 ```
 Needed images: `r2s-cli r2s-ingest r2s-sam3 r2s-rtabmap r2s-3dgrut r2s-collision r2s-isaaclab3-sim61`. `r2s-ingest` must be the build with `imageio-ffmpeg`
 (`docker run --rm --entrypoint python r2s-ingest:latest -c "import imageio_ffmpeg"`), else the fly-through is a GIF.
-Laptop: `./scripts/capture.sh --check` (USB **3.x** link), print `docs/charuco-board-a3.pdf` at 100 %.
+Laptop on mains power: `./scripts/capture.sh --check` (USB **3.x** link), print `docs/charuco-board-a3.pdf` at 100 %.
 
 ## 1. What to measure in the lab (before the take; 20 min)
 
@@ -36,13 +36,13 @@ Also leave the **lights on, blinds closed**, cubes on the table where they will 
 ## 2. Record (laptop), transfer
 
 ```bash
-./scripts/capture.sh --check                 # camera, serial, USB 3.x link
-./scripts/capture.sh --preview               # tune exposure (bright, not clipped, no blur); then pin: R2S_EXPOSURE=.. R2S_GAIN=.. R2S_WHITE_BALANCE=..
+./scripts/capture.sh --check                 # OAK-D Pro W: product, sensors, USB SUPER link, calibration (R2S_CAMERA=realsense for the D455)
+./scripts/capture.sh --preview               # tune exposure (bright, not clipped, no blur; short exposure, rolling shutter); pin: R2S_OAK_EXPOSURE_US=.. R2S_OAK_ISO=.. R2S_OAK_WB_K=.. or edit docker/capture/oak_params.yaml
 ./scripts/capture.sh robolab-tableA          # -> ~/real2sim-captures/robolab-tableA-<timestamp>/ ; wait for RECORDING, walk, Ctrl-C once
 rsync -avP --partial ~/real2sim-captures/robolab-tableA-<timestamp> $WORKSTATION_USER@$WORKSTATION_HOST:~/real2sim-data/captures/
 ```
 Walk: 2-3 slow orbits (knee / chest / head), one slow close pass over the table looking down **with the board in view for >= 30 s in total**
-(20-50 deg oblique and frontal, 0.7-2 m; the D455 has no depth closer than ~0.5 m), dwell ~10 s at the wrist- and front-camera viewpoints, revisit the start. Do not touch the arm, board or cubes.
+(20-50 deg oblique and frontal, 0.8-2 m; the OAK has no depth closer than ~0.7 m; walk slower than with a global-shutter camera; check the take summary for ~30 Hz colour/depth and ~400 Hz IMU), dwell ~10 s at the wrist- and front-camera viewpoints, revisit the start. Do not touch the arm, board or cubes.
 
 ## 3. Build (workstation)
 

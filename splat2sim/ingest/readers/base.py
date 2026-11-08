@@ -38,6 +38,8 @@ class Source(ABC):
     gt_units: str = ""
     camera_serial: str | None = None
     camera_firmware: str | None = None
+    undistorted_in_ingest: bool = False  # True when the reader remapped colour/depth to a pinhole K (see ingest/undistort.py)
+    original_intrinsics: dict | None = None  # camera_info as recorded (model, distortion_coeffs, K) when undistorted_in_ingest
 
     def meta(self) -> dict:
         """Source-specific facts, valid after ``frames()`` is exhausted (dropped counts etc.)."""

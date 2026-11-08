@@ -1,13 +1,18 @@
-"""ROS 2 MCAP reader (our capture script: realsense2_camera + `ros2 bag record -s mcap`).
+"""ROS 2 MCAP reader (our capture script: OAK-D Pro W depthai driver or realsense2_camera, + `ros2 bag record -s mcap`).
 
-Topics are discovered by suffix so the camera namespace (``/camera/camera`` or ``/camera``) does not matter:
-  colour           ``*/color/image_raw``                       sensor_msgs/Image (rgb8)
-  aligned depth    ``*/aligned_depth_to_color/image_raw``     16UC1, mm, colour geometry   (preferred)
+Topics are discovered by suffix so the camera namespace (``/oak``, ``/camera/camera``, ``/camera``) does not matter:
+  colour           ``*/color/image_raw`` (RealSense) | ``*/rgb/image_raw`` (OAK)      sensor_msgs/Image (rgb8/bgr8)
+  aligned depth    ``*/aligned_depth_to_color/image_raw`` (RealSense) | ``*/stereo/image_raw`` (OAK, aligned to
+                   the RGB socket on the device)                                      16UC1 mm or 32FC1 m, colour geometry (preferred)
   raw depth        ``*/depth/image_rect_raw``                  fallback: registered to colour here using
                                                                camera_info + extrinsics (``*/extrinsics/depth_to_color``
                                                                topic, else /tf_static)
-  camera_info      ``*/color/camera_info`` (+ depth variants)
-  IMU              ``*/imu`` (united) or ``*/gyro/sample`` + ``*/accel/sample`` (united here)
+  camera_info      ``*/color/camera_info`` | ``*/rgb/camera_info`` (+ depth variants)
+  IMU              ``*/imu`` | ``*/imu/data`` (united) or ``*/gyro/sample`` + ``*/accel/sample`` (united here)
+
+Pinhole invariant: if the colour ``camera_info`` still has non-negligible distortion coefficients (OAK with
+``rgb.i_undistorted: false``) colour and depth are undistorted here, see ``undistort.py``.
+An optional ``capture_info.json`` next to the .mcap (written by scripts/capture.sh) supplies camera product/serial.
 """
 
 from __future__ import annotations
@@ -20,6 +25,7 @@ import numpy as np
 from ..geometry import Intrinsics, invert_T, make_T, register_depth_to_color
 from ..imu import ImuData, sort_dedupe, unite
 from ..pairing import StreamPairer
+from ..undistort import Undistorter, maybe_build
 from . import rosimg
 from .base import Frame, Source
 from .tf import TfGraph
@@ -37,13 +43,13 @@ def _pick(topics: dict[str, str], suffixes: tuple[str, ...], msgtype: str | None
 def discover_topics(topics: dict[str, str]) -> dict[str, str | None]:
     """``topics``: {topic: schema name}. Returns role -> topic (None if absent)."""
     return {
-        "color": _pick(topics, ("/color/image_raw",), IMAGE_T),
-        "depth_aligned": _pick(topics, ("/aligned_depth_to_color/image_raw",), IMAGE_T),
+        "color": _pick(topics, ("/color/image_raw", "/rgb/image_raw"), IMAGE_T),
+        "depth_aligned": _pick(topics, ("/aligned_depth_to_color/image_raw", "/stereo/image_raw"), IMAGE_T),
         "depth_raw": _pick(topics, ("/depth/image_rect_raw", "/depth/image_raw"), IMAGE_T),
-        "color_info": _pick(topics, ("/color/camera_info",), INFO_T),
+        "color_info": _pick(topics, ("/color/camera_info", "/rgb/camera_info"), INFO_T),
         "depth_info": _pick(topics, ("/depth/camera_info",), INFO_T),
-        "aligned_info": _pick(topics, ("/aligned_depth_to_color/camera_info",), INFO_T),
-        "imu": _pick(topics, ("/imu",), IMU_T),
+        "aligned_info": _pick(topics, ("/aligned_depth_to_color/camera_info", "/stereo/camera_info"), INFO_T),
+        "imu": _pick(topics, ("/imu", "/imu/data"), IMU_T),
         "gyro": _pick(topics, ("/gyro/sample",), IMU_T),
         "accel": _pick(topics, ("/accel/sample",), IMU_T),
         "tf_static": "/tf_static" if topics.get("/tf_static", "").endswith("TFMessage") else None,
@@ -72,11 +78,11 @@ class McapSource(Source):
             self.mcap_metadata = {m.name: dict(m.metadata) for m in r.iter_metadata()}
         self.roles = discover_topics(self.topics)
         if not self.roles["color"]:
-            raise ValueError(f"{path}: no */color/image_raw topic; found: {sorted(self.topics)}")
+            raise ValueError(f"{path}: no */color/image_raw or */rgb/image_raw topic; found: {sorted(self.topics)}")
         if depth_mode == "auto":
             depth_mode = "aligned" if self.roles["depth_aligned"] else "register"
         if depth_mode == "aligned" and not self.roles["depth_aligned"]:
-            raise ValueError("no aligned_depth_to_color topic in capture")
+            raise ValueError("no aligned depth topic (*/aligned_depth_to_color/image_raw or */stereo/image_raw) in capture")
         if depth_mode == "register" and not self.roles["depth_raw"]:
             raise ValueError("no depth topic (aligned or raw) in capture")
         self.depth_mode = depth_mode
@@ -85,6 +91,19 @@ class McapSource(Source):
         self._depth_info: dict | None = None
         self._T_c_d: np.ndarray | None = None
         self._info_scanned = False
+        self._undist: Undistorter | None = None
+        self.capture_info = self._read_capture_info()
+        self.camera_serial = self.capture_info.get("serial") or None
+        self.camera_firmware = self.capture_info.get("firmware") or None
+
+    def _read_capture_info(self) -> dict:
+        import json
+
+        p = self.path.parent / "capture_info.json"
+        try:
+            return json.loads(p.read_text()) if p.is_file() else {}
+        except (OSError, ValueError):
+            return {}
 
     # -- helpers --
     def _iter(self, topics: list[str]):
@@ -115,6 +134,15 @@ class McapSource(Source):
             raise ValueError("no colour camera_info in capture; cannot build intrinsics")
         self._intr = Intrinsics.from_K(ci["K"], ci["width"], ci["height"], ci["model"], ci["D"],
                                        f"camera_info {self.roles['color_info']}")
+        self.original_intrinsics = {"model": ci["model"], "distortion_coeffs": list(ci["D"]), "K": list(ci["K"]),
+                                    "width": ci["width"], "height": ci["height"], "topic": self.roles["color_info"]}
+        self._undist = maybe_build(self._intr)
+        if self._undist is not None:
+            # colour (and aligned depth, which shares the colour geometry) are remapped in frames(); expose the pinhole K
+            self._intr = self._undist.intrinsics(
+                f"camera_info {self.roles['color_info']} ({ci['model']}, {len(ci['D'])} coeffs) UNDISTORTED in ingest "
+                f"(alpha=0, valid {self._undist.valid_fraction:.4f})")
+            self.undistorted_in_ingest = True
         self._depth_info = di
         if self.depth_mode == "register":
             if di is None:
@@ -152,6 +180,17 @@ class McapSource(Source):
                 kind, payload = "depth", rosimg.to_depth_units(msg)
             for ts_ns, color, depth in pairer.push(kind, ts, payload):
                 h, w = color.shape[:2]
+                if self._undist is not None:
+                    if (w, h) != self._undist.size:
+                        raise ValueError(f"colour frame {w}x{h} differs from camera_info {self._undist.size[0]}x{self._undist.size[1]}; "
+                                         "cannot undistort")
+                    color = self._undist.color(color)
+                    if self.depth_mode == "aligned":
+                        if depth.shape[:2] != (h, w):  # aligned depth at another resolution: bring to colour size first
+                            import cv2
+
+                            depth = cv2.resize(depth, (w, h), interpolation=cv2.INTER_NEAREST)
+                        depth = self._undist.depth(depth)
                 if self.depth_mode == "register":
                     depth = register_depth_to_color(depth, K_d, intr.K, self._T_c_d, (w, h), 0.001)  # type: ignore[arg-type]
                 elif depth.shape[:2] != (h, w):
@@ -191,6 +230,10 @@ class McapSource(Source):
         d = {"topics": self.roles, "mcap_metadata": self.mcap_metadata,
              "message_counts": {t: c for t, c in self.counts.items() if t in set(v for v in self.roles.values() if v)}}
         d.update(self._stats)
+        if self.capture_info:
+            d["capture_info"] = self.capture_info
+        if self.original_intrinsics:
+            d["original_intrinsics"] = self.original_intrinsics
         if self._T_c_d is not None:
             d["T_color_from_depth"] = self._T_c_d.tolist()
         return d

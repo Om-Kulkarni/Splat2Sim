@@ -155,6 +155,17 @@ def test_discover_topics_namespaces():
         assert r["imu"] == f"{ns}/imu" and r["gyro"] is None and r["tf_static"] == "/tf_static"
 
 
+def test_discover_topics_oak():
+    t = {"/oak/rgb/image_raw": "sensor_msgs/msg/Image", "/oak/rgb/image_raw/compressed": "sensor_msgs/msg/CompressedImage",
+         "/oak/rgb/camera_info": "sensor_msgs/msg/CameraInfo", "/oak/stereo/image_raw": "sensor_msgs/msg/Image",
+         "/oak/stereo/camera_info": "sensor_msgs/msg/CameraInfo", "/oak/imu/data": "sensor_msgs/msg/Imu",
+         "/tf_static": "tf2_msgs/msg/TFMessage"}
+    r = discover_topics(t)
+    assert r["color"] == "/oak/rgb/image_raw" and r["color_info"] == "/oak/rgb/camera_info"
+    assert r["depth_aligned"] == "/oak/stereo/image_raw" and r["aligned_info"] == "/oak/stereo/camera_info"
+    assert r["imu"] == "/oak/imu/data" and r["depth_raw"] is None and r["tf_static"] == "/tf_static"
+
+
 def test_tf_lookup_chain():
     g = TfGraph()
     g.add("link", "depth", make_T(np.eye(3), [0, 0, 0]))
@@ -295,3 +306,139 @@ def test_frames_folder_reader_roundtrip(tmp_path):
     fr = list(src.frames())
     assert len(fr) == 3 and fr[2].depth[0, 0] == 1002 and fr[1].color.shape == (12, 16, 3)
     assert src.intrinsics().fx == 10.0 and src.gt_units == "m" and src.gt_poses()[1].shape == (1, 7)
+
+
+# ---------- pinhole invariant: undistortion at ingest ----------
+PLUMB = ("plumb_bob", [-0.30, 0.10, 0.001, -0.001, 0.0])
+RATIONAL14 = ("rational_polynomial", [0.45, 0.12, 0.0004, -0.0004, 0.0, 0.55, 0.10, 0.0, 0, 0, 0, 0, 0, 0])
+
+
+def _synth_K(w, h, hfov_deg=100.0):
+    f = (w / 2) / np.tan(np.radians(hfov_deg) / 2)
+    return np.array([[f, 0, (w - 1) / 2], [0, f, (h - 1) / 2], [0, 0, 1.0]])
+
+
+@pytest.mark.parametrize("model,D", [PLUMB, RATIONAL14])
+def test_undistort_roundtrip_matches_ideal_pinhole(model, D):
+    """Render a textured plane through the distorted lens, undistort, compare with the analytic ideal pinhole image."""
+    pytest.importorskip("cv2")
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).parent))
+    from synth_mcap import plane_pattern, render_plane
+
+    from splat2sim.ingest.undistort import Undistorter, opencv_coeffs
+
+    w, h = 320, 240
+    K = _synth_K(w, h)
+    img = render_plane(w, h, K, opencv_coeffs(model, D), 1.0)
+    intr = Intrinsics.from_K(K, w, h, model, D)
+    u = Undistorter.build(intr)
+    out = u.color(img)
+    nK = u.new_K
+    uu, vv = np.meshgrid(np.arange(w), np.arange(h))
+    x, y = (uu - nK[0, 2]) / nK[0, 0], (vv - nK[1, 2]) / nK[1, 1]
+    g = plane_pattern(x, y)
+    expect = np.clip(np.stack([g, 255 - g, 0.5 * g + 60], -1), 0, 255)
+    err = np.abs(out.astype(float) - expect)[h // 8: -h // 8, w // 8: -w // 8]  # periphery is minified by the lens: bilinear is coarse there
+    assert np.median(err) < 1.5 and np.percentile(err, 99) < 10, (np.median(err), np.percentile(err, 99))
+    # new intrinsics: zero distortion, same size, no black borders (alpha=0 -> every output pixel samples inside the source)
+    ni = u.intrinsics("test")
+    assert ni.distortion == [0.0] * 5 and (ni.width, ni.height) == (w, h)
+    assert u.valid_fraction >= 0.9995
+    assert (u.depth(np.full((h, w), 1000, np.uint16)) > 0).mean() > 0.999
+
+
+def test_undistort_depth_is_nearest_and_passthrough_when_ideal():
+    pytest.importorskip("cv2")
+    from splat2sim.ingest.undistort import is_distorted, maybe_build
+
+    w, h = 160, 120
+    K = _synth_K(w, h)
+    assert maybe_build(Intrinsics.from_K(K, w, h, "plumb_bob", [0.0] * 5)) is None
+    assert maybe_build(Intrinsics.from_K(K, w, h, "rational_polynomial", [0.0] * 14)) is None
+    assert maybe_build(Intrinsics.from_K(K, w, h, "plumb_bob", [1e-6] * 5)) is None  # numerical noise passes through
+    assert is_distorted("plumb_bob", [0.01, 0, 0, 0, 0])
+    u = maybe_build(Intrinsics.from_K(K, w, h, *PLUMB))
+    assert u is not None
+    d = np.full((h, w), 1000, np.uint16)
+    d[:, w // 2:] = 600
+    out = u.depth(d)
+    assert set(np.unique(out)) <= {0, 600, 1000}  # nearest: no invented in-between values
+
+
+def test_undistort_rejects_unsupported_models():
+    pytest.importorskip("cv2")
+    from splat2sim.ingest.undistort import opencv_coeffs
+
+    with pytest.raises(ValueError, match="fisheye"):
+        opencv_coeffs("equidistant", [0.1, 0.0, 0.0, 0.0])
+    with pytest.raises(ValueError):
+        opencv_coeffs("plumb_bob", [0.1, 0.2, 0.3])  # 3 coefficients is not a valid OpenCV vector
+    assert len(opencv_coeffs("rational_polynomial", list(range(14)))) == 14
+
+
+def _oak_mcap(tmp_path, **kw):
+    pytest.importorskip("cv2")
+    pytest.importorskip("mcap_ros2")
+    pytest.importorskip("rosbags")
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).parent))
+    from synth_mcap import write_mcap
+
+    cap = tmp_path / "oak.mcap"
+    write_mcap(cap, n_frames=6, layout="oak", color_size=(160, 120), depth_size=(160, 120), **kw)
+    return cap
+
+
+@pytest.mark.parametrize("depth_encoding", ["16UC1", "32FC1"])
+def test_end_to_end_oak_already_undistorted(tmp_path, depth_encoding):
+    """OAK with on-device undistortion: camera_info D == 0 -> pass-through; 32FC1 metres converted to uint16 mm; bgr8 -> RGB."""
+    from splat2sim.ingest.pipeline import Options, run
+
+    cap = _oak_mcap(tmp_path, depth_encoding=depth_encoding, color_encoding="bgr8",
+                    capture_info={"product": "OAK-D-PRO-W", "driver": "depthai_ros_driver_v3", "serial": "X"})
+    out = tmp_path / "frames"
+    meta = run(cap, out, Options())
+    assert meta["frames"] == 6 and meta["imu"]["present"]
+    assert meta["source"]["topics"]["color"] == "/oak/rgb/image_raw" and meta["source"]["depth_topic"] == "/oak/stereo/image_raw"
+    assert meta["undistorted_in_ingest"] is False
+    assert meta["camera"]["product"] == "OAK-D-PRO-W" and meta["camera_serial"] == "X"
+    intr = json.loads((out / "intrinsics.json").read_text())
+    assert intr["undistorted_in_ingest"] is False and abs(intr["fx"] - 144) < 1e-9
+    import cv2
+
+    d = cv2.imread(str(out / "depth" / "000002.png"), cv2.IMREAD_UNCHANGED)
+    assert d.dtype == np.uint16 and d[60, 80] == 600 and d[5, 5] == 1000
+    c = cv2.cvtColor(cv2.imread(str(out / "color" / "000002.png")), cv2.COLOR_BGR2RGB)
+    assert c.shape == (120, 160, 3)
+
+
+@pytest.mark.parametrize("model,D", [PLUMB, RATIONAL14])
+def test_end_to_end_oak_distorted_is_undistorted_in_ingest(tmp_path, model, D):
+    """Recorded with rgb.i_undistorted=false: ingest removes the distortion and writes a pinhole intrinsics.json."""
+    from splat2sim.ingest.pipeline import Options, run
+    import cv2
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).parent))
+    from synth_mcap import plane_pattern
+
+    cap = _oak_mcap(tmp_path, distortion=(model, D), plane=True)
+    out = tmp_path / "frames"
+    meta = run(cap, out, Options())
+    intr = json.loads((out / "intrinsics.json").read_text())
+    assert intr["undistorted_in_ingest"] is True and meta["undistorted_in_ingest"] is True
+    assert intr["original_camera_model"] == model and intr["original_distortion_coeffs"] == list(D)
+    assert intr["distortion_model"] == "plumb_bob" and set(intr["distortion_coeffs"]) == {0.0}
+    assert "UNDISTORTED" in intr["source"] and meta["camera_distortion_model"] == model
+    assert (intr["width"], intr["height"]) == (160, 120)
+    # the written K describes the written image: compare with the analytic ideal pinhole render
+    c = cv2.cvtColor(cv2.imread(str(out / "color" / "000001.png")), cv2.COLOR_BGR2RGB).astype(float)
+    uu, vv = np.meshgrid(np.arange(160), np.arange(120))
+    g = plane_pattern((uu - intr["cx"]) / intr["fx"], (vv - intr["cy"]) / intr["fy"])
+    assert np.median(np.abs(c[..., 0] - np.clip(g, 0, 255))) < 2.5
+    d = cv2.imread(str(out / "depth" / "000001.png"), cv2.IMREAD_UNCHANGED)
+    assert set(np.unique(d)) <= {0, 600, 1000} and (d > 0).mean() > 0.99
+    assert meta["source"]["original_intrinsics"]["model"] == model
