@@ -5,9 +5,9 @@ of a robot workcell into a **Scene**: a Gaussian-splat visual layer plus a colli
 Isaac Lab 3.0. On top of the Scene sits a **Task environment** with an FR3 arm, a Robotiq 2F-85 gripper and cubes, checked
 by a scripted pick-and-lift. Vocabulary: [`CONTEXT.md`](CONTEXT.md).
 
-![Splat of the synthetic workcell, rendered from the trained Scene](docs/img/splat-overview-synth.jpg)
+![Held-out view: splat render (left) vs camera image (right)](docs/img/heldout-render-vs-gt.jpg)
 
-<sub>Trained splat of the synthetic Capture (`tools/synth_capture`), rendered by the `report` stage.</sub>
+<sub>Held-out frame of the public SLAM&Render mock Capture: splat render (left) vs ground truth (right).</sub>
 
 ## Pipeline
 
@@ -16,11 +16,11 @@ by a scripted pick-and-lift. Vocabulary: [`CONTEXT.md`](CONTEXT.md).
 Every stage runs in its own container, writes into one run folder and leaves a `.done` marker, so reruns only redo what
 changed. Details in [Architecture](docs/architecture.md).
 
-| Held-out render vs ground truth | Colliders over the splat | Pick-and-lift in the Task environment |
+| Ingest: depth over colour | Colliders over the splat | Pick-and-lift in the Task environment |
 |---|---|---|
-| ![render and ground truth](docs/img/heldout-render-vs-gt.jpg) | ![collision debug](docs/img/collision-debug-top.jpg) | ![env overview](docs/img/env-overview-lift.jpg) |
+| ![ingest overlay](docs/img/ingest-overlay.jpg) | ![collision debug](docs/img/collision-debug-top.jpg) | ![env overview](docs/img/env-overview-lift.jpg) |
 
-<sub>Left and middle: public SLAM&Render mock capture. Right: synthetic Capture.</sub>
+<sub>Left and middle: public mock Captures. Right: synthetic Capture.</sub>
 
 ## Status
 
