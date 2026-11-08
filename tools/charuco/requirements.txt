@@ -1,0 +1,5 @@
+# Pinned: OpenCV >= 4.7 changed ChArUco pattern generation (legacy-pattern flag, opencv#23152).
+# The printed board and the detector MUST come from the same OpenCV version.
+opencv-contrib-python-headless==4.10.0.84
+numpy==1.26.4
+pillow==10.4.0

@@ -1,0 +1,116 @@
+# Splat2Sim services. Run via ./r2s (sets R2S_DATA); only r2s-cli and isaac are real so far,
+# the rest are placeholders under the "todo" profile.
+name: splat2sim
+
+x-data: &data ${R2S_DATA:-${HOME}/real2sim-data}
+
+x-env-file: &env_file
+  - path: ${R2S_DATA:-${HOME}/real2sim-data}/.env   # HF_TOKEN etc.; never baked into images
+    required: false
+
+x-todo: &todo
+  profiles: [todo]
+  env_file: *env_file
+  volumes:
+    - ${R2S_DATA:-${HOME}/real2sim-data}/runs:/runs
+
+services:
+  r2s-cli:
+    build: {context: ., dockerfile: docker/r2s-cli/Dockerfile}
+    image: r2s-cli:latest
+    profiles: [tools]
+    working_dir: /repo
+    environment: {R2S_DATA: *data, R2S_REPO: /repo, PYTHONPATH: /repo}
+    volumes:
+      - .:/repo
+      - ${R2S_DATA:-${HOME}/real2sim-data}:${R2S_DATA:-${HOME}/real2sim-data}
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  # Capture -> frames/. Pure python (rosbags, mcap, opencv); the package is bind-mounted, so code edits need no
+  # rebuild. `r2s build` adds `-v <capture>:/capture:ro -e R2S_CAPTURE=/capture --user uid:gid` (stages.compose_cmd).
+  ingest:
+    build: {context: ., dockerfile: docker/ingest/Dockerfile}
+    image: r2s-ingest:latest
+    working_dir: /opt/r2s
+    volumes:
+      - ${R2S_DATA:-${HOME}/real2sim-data}/runs:/runs
+      - ./splat2sim:/opt/r2s/splat2sim:ro
+
+  # Robot mask (SAM 3.1). Weights (gated facebook/sam3.1) are fetched at run time with $HF_TOKEN from the env file
+  # into cache/hf; `r2s build` runs it as the host uid (stages.run_as_user), so cache/hf must be host-owned.
+  sam3:
+    build: {context: ., dockerfile: docker/sam3/Dockerfile}
+    image: r2s-sam3:latest
+    env_file: *env_file
+    working_dir: /opt/r2s
+    volumes:
+      - ${R2S_DATA:-${HOME}/real2sim-data}/runs:/runs
+      - ${R2S_DATA:-${HOME}/real2sim-data}/cache/hf:/cache/hf
+      - ./splat2sim:/opt/r2s/splat2sim:ro
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - {driver: nvidia, count: all, capabilities: [gpu]}
+  rtabmap:   # CPU-only; see docker/rtabmap/README.md
+    build: {context: docker/rtabmap, dockerfile: Dockerfile}
+    image: r2s-rtabmap:latest
+    user: "${R2S_UID:-1000}:${R2S_GID:-1000}"
+    working_dir: /runs
+    environment: {HOME: /tmp, PYTHONPATH: /opt/r2s, PYTHONDONTWRITEBYTECODE: "1"}
+    volumes:
+      - ${R2S_DATA:-${HOME}/real2sim-data}/runs:/runs
+      - ./splat2sim:/opt/r2s/splat2sim:ro   # poses stage: python3 -m splat2sim.recon poses
+  colmap:    {<<: *todo, build: {context: ., dockerfile: docker/colmap/Dockerfile},    image: r2s-colmap:latest}
+  3dgrut:    # see docker/3dgrut/README.md; JIT-built tracers are cached in /cache
+    build: {context: docker/3dgrut, dockerfile: Dockerfile}
+    image: r2s-3dgrut:latest
+    working_dir: /opt/3dgrut
+    environment: {NVIDIA_VISIBLE_DEVICES: all, HOME: /tmp, TORCH_HOME: /cache/torch, PYTHONPATH: /opt/r2s, PYTHONDONTWRITEBYTECODE: "1"}
+    volumes:
+      - ${R2S_DATA:-${HOME}/real2sim-data}/runs:/runs
+      - ${R2S_DATA:-${HOME}/real2sim-data}/cache/3dgrut:/cache
+      - ./splat2sim:/opt/r2s/splat2sim:ro   # splat stage: python -m splat2sim.recon splat
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - {driver: nvidia, count: all, capabilities: [gpu]}
+  # TSDF mesh + table/pedestal fits (Open3D, CPU); `r2s build` runs it as the host uid. See docker/collision/Dockerfile.
+  collision:
+    build: {context: docker/collision, dockerfile: Dockerfile}
+    image: r2s-collision:latest
+    working_dir: /opt/r2s
+    environment: {HOME: /tmp}
+    volumes:
+      - ${R2S_DATA:-${HOME}/real2sim-data}/runs:/runs
+      - ./splat2sim:/opt/r2s/splat2sim:ro
+
+  # Isaac Lab 3.0 on Isaac Sim 6.1 (flags from spikes/isaac-smoke/, ticket 12). Run as root: the Lab
+  # image needs it to write caches; the entrypoint is overridden because the image default is runheadless.sh.
+  isaac:
+    image: r2s-isaaclab3-sim61:latest
+    user: "0"
+    entrypoint: [/workspace/isaaclab/isaaclab.sh]
+    env_file: *env_file
+    environment:
+      ACCEPT_EULA: "Y"
+      PRIVACY_CONSENT: "Y"
+      # Pinned to 6.1: Lab's repo default is 6.2, which does not match the installed Sim.
+      ISAACSIM_ASSET_ROOT: https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.1
+      PYTHONPATH: /opt/r2s
+    volumes:
+      - ${R2S_DATA:-${HOME}/real2sim-data}/runs:/runs
+      - ./docker/isaac/scripts:/workspace/r2s:ro
+      - ./splat2sim:/opt/r2s/splat2sim:ro   # pure-python helpers shared with the pipeline (splat2sim.recon.usdutil)
+      - ${R2S_DATA:-${HOME}/real2sim-data}/cache/isaac/kit:/isaac-sim/kit/cache
+      - ${R2S_DATA:-${HOME}/real2sim-data}/cache/isaac/ov:/root/.cache/ov
+      - ${R2S_DATA:-${HOME}/real2sim-data}/cache/isaac/glcache:/root/.cache/nvidia/GLCache
+      - ${R2S_DATA:-${HOME}/real2sim-data}/cache/isaac/computecache:/root/.nv/ComputeCache
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - {driver: nvidia, count: all, capabilities: [gpu]}
+    # CDI alternative (also verified): drop the deploy block and use
+    #   devices: ["nvidia.com/gpu=all"]

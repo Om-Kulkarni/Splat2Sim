@@ -1,0 +1,59 @@
+# Lab config for the robotics lab (FR3 + Robotiq 2F-85).
+# Conventions are documented in splat2sim/config.py: metres, radians (joints),
+# degrees (rpy / fov), poses = xyz + rpy, z-up, world = FR3 base frame.
+lab: robolab
+
+charuco:
+  dictionary: DICT_4X4_50
+  squares_x: 7
+  squares_y: 5
+  square_length_m: 0.055   # TODO: replace with the MEASURED square length of the printed board
+  marker_length_m: 0.041
+
+# Pose of the board in the robot-base frame (p_base = R p_board + t).
+# TODO-measure: placeholder, must be measured once the board is fixed to the table.
+board_to_base:
+  xyz: [0.50, 0.0, 0.0]
+  rpy: [0.0, 0.0, 0.0]
+
+robot:
+  model: fr3
+  # Franka "ready" pose (rad). Used for QA only (mask-vs-URDF silhouette).
+  scan_pose_joints: [0.0, -0.7853981634, 0.0, -2.3561944902, 0.0, 1.5707963268, 0.7853981634]
+  gripper: robotiq_2f85
+  # Flange -> Robotiq 2F-85 base via ISO 9409-1-50 coupling plate. TODO-measure.
+  coupling_offset:
+    xyz: [0.0, 0.0, 0.008]
+    rpy: [0.0, 0.0, 0.0]
+
+# ASSUMED poses (exact calibration is out of scope for v1). Camera frame: +x forward, +y left, +z up;
+# positive pitch tilts down.
+policy_cameras:
+  wrist:
+    parent_frame: flange        # gripper side, looking along the fingers (flange +z), tilted forward-down
+    pose:
+      xyz: [0.06, 0.0, 0.08]
+      rpy: [0.0, -80.0, 0.0]
+    intrinsics: {width: 640, height: 480, fov: 87.0}
+  front:
+    parent_frame: robot_base    # ~1.0 m in front of the base, 0.8 m up, facing the base, pitched 45 deg down
+    pose:
+      xyz: [1.0, 0.0, 0.8]
+      rpy: [0.0, 45.0, 180.0]
+    intrinsics: {width: 640, height: 480, fov: 87.0}
+
+cubes:
+  count: 3
+  size_m: 0.05
+  mass_kg: 0.05
+  # spawn_region: omitted -> uses the fitted table box from the collision stage.
+
+# Optional collision-stage defaults (same keys as `r2s build --set collision.<key>=...`); robot clearance around the base/arm
+# at the scan pose is ON by default for a ChArUco anchor:
+# collision: {clearance_radius_m: 0.25, clearance_arm_radius_m: 0.10}
+
+# Optional manual overrides of the RANSAC-fitted collision primitives (robot-base frame):
+# overrides:
+#   table_box: {center: [0.5, 0.0, -0.02], size: [1.2, 0.8, 0.04]}
+#   pedestal_box: {center: [0.0, 0.0, -0.25], size: [0.3, 0.3, 0.5]}
+overrides: {}

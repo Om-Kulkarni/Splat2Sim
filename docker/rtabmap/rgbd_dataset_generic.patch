@@ -1,0 +1,138 @@
+diff --git a/tools/RgbdDataset/main.cpp b/tools/RgbdDataset/main.cpp
+index 57f2fa6..017560d 100644
+--- a/tools/RgbdDataset/main.cpp
++++ b/tools/RgbdDataset/main.cpp
+@@ -28,6 +28,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ #include <rtabmap/core/Odometry.h>
+ #include "rtabmap/core/Rtabmap.h"
+ #include "rtabmap/core/CameraRGBD.h"
++#include "rtabmap/core/IMUFilter.h"
++#include "rtabmap/core/IMU.h"
++#include <fstream>
++#include <sstream>
+ #include "rtabmap/core/Graph.h"
+ #include "rtabmap/core/OdometryInfo.h"
+ #include "rtabmap/core/OdometryEvent.h"
+@@ -60,6 +64,14 @@ void showUsage()
+ 			"  --skip #           Skip X frames.\n"
+ 			"  --max_time_diff #.#  Maximum time difference with frame to attribute a valid ground truth pose (default 0.02 s).\n"
+ 			"  --quiet            Don't show log messages and iteration updates.\n"
++			"  R2S extensions (generic RGB-D folder, e.g. D435i; replaces the hard-coded TUM calibration):\n"
++			"  --fx/--fy/--cx/--cy #  Pinhole intrinsics of the RGB image (depth must be registered to it).\n"
++			"  --width/--height #     Image size in pixels (default 640x480).\n"
++			"  --depth_factor #       16-bit depth divisor to get millimetres (default 5 = TUM 5000/m; use 1 for mm PNGs).\n"
++			"  --rgb_dir/--depth_dir  Sub-folders (or absolute paths) with timestamp-named images (default rgb_sync/depth_sync).\n"
++			"  --gt file              TUM groundtruth.txt (tx ty tz qx qy qz qw). Only used when given.\n"
++			"  --imu file             Optional IMU csv: t ax ay az gx gy gz (m/s^2, rad/s, camera optical frame); Madgwick-filtered orientation is attached to each frame.\n"
++			"  --max_frames #         Stop after N frames (default all).\n"
+ 			"%s\n"
+ 			"Example:\n\n"
+ 			"   $ rtabmap-rgbd_dataset \\\n"
+@@ -96,6 +108,9 @@ int main(int argc, char * argv[])
+ 	int skipFrames = 0;
+ 	float maxTimeDiff = 0.02f;
+ 	bool quiet = false;
++	float fx=0, fy=0, cx=0, cy=0, depthFactorArg=5.0f;
++	int imgW=640, imgH=480, maxFrames=0;
++	std::string rgbDirArg="rgb_sync", depthDirArg="depth_sync", gtArg, imuArg;
+ 	if(argc < 2)
+ 	{
+ 		showUsage();
+@@ -122,6 +137,18 @@ int main(int argc, char * argv[])
+ 				maxTimeDiff = atof(argv[++i]);
+ 				UASSERT(maxTimeDiff > 0.0f);
+ 			}
++			else if(std::strcmp(argv[i], "--fx") == 0) { fx = atof(argv[++i]); }
++			else if(std::strcmp(argv[i], "--fy") == 0) { fy = atof(argv[++i]); }
++			else if(std::strcmp(argv[i], "--cx") == 0) { cx = atof(argv[++i]); }
++			else if(std::strcmp(argv[i], "--cy") == 0) { cy = atof(argv[++i]); }
++			else if(std::strcmp(argv[i], "--width") == 0) { imgW = atoi(argv[++i]); }
++			else if(std::strcmp(argv[i], "--height") == 0) { imgH = atoi(argv[++i]); }
++			else if(std::strcmp(argv[i], "--depth_factor") == 0) { depthFactorArg = atof(argv[++i]); }
++			else if(std::strcmp(argv[i], "--rgb_dir") == 0) { rgbDirArg = argv[++i]; }
++			else if(std::strcmp(argv[i], "--depth_dir") == 0) { depthDirArg = argv[++i]; }
++			else if(std::strcmp(argv[i], "--gt") == 0) { gtArg = argv[++i]; }
++			else if(std::strcmp(argv[i], "--imu") == 0) { imuArg = argv[++i]; }
++			else if(std::strcmp(argv[i], "--max_frames") == 0) { maxFrames = atoi(argv[++i]); }
+ 			else if(std::strcmp(argv[i], "--quiet") == 0)
+ 			{
+ 				quiet = true;
+@@ -145,10 +172,11 @@ int main(int argc, char * argv[])
+ 	}
+ 
+ 	std::string seq = uSplit(path, '/').back();
+-	std::string pathRgbImages  = path+"/rgb_sync";
+-	std::string pathDepthImages = path+"/depth_sync";
+-	std::string pathGt = path+"/groundtruth.txt";
+-	if(!UFile::exists(pathGt))
++	std::string pathRgbImages  = (rgbDirArg[0]=='/') ? rgbDirArg : path+"/"+rgbDirArg;
++	std::string pathDepthImages = (depthDirArg[0]=='/') ? depthDirArg : path+"/"+depthDirArg;
++	std::string pathGt = gtArg;
++	if(fx>0) {} else pathGt = path+"/groundtruth.txt"; // legacy behaviour for TUM sequences
++	if(!pathGt.empty() && !UFile::exists(pathGt))
+ 	{
+ 		UWARN("Ground truth file path doesn't exist: \"%s\", benchmark values won't be computed.", pathGt.c_str());
+ 		pathGt.clear();
+@@ -196,7 +224,28 @@ int main(int argc, char * argv[])
+ 	Transform opticalRotation(0,0,1,0, -1,0,0,0, 0,-1,0,0);
+ 	float depthFactor = 5.0f;
+ 	int gtPoseFormat = 1;
+-	if(sequenceName.find("freiburg1") != std::string::npos)
++	std::vector<std::vector<double> > imuRows;
++	if(!imuArg.empty())
++	{
++		std::ifstream f(imuArg.c_str()); std::string line;
++		while(std::getline(f, line))
++		{
++			if(line.empty() || line[0]=='#') continue;
++			std::vector<double> r(7); std::istringstream ss(line);
++			bool ok=true; for(int k=0;k<7;++k) if(!(ss>>r[k])) ok=false;
++			if(ok) imuRows.push_back(r);
++		}
++		printf("Loaded %d IMU samples from %s\n", (int)imuRows.size(), imuArg.c_str());
++	}
++	IMUFilter * imuFilter = imuRows.empty() ? 0 : IMUFilter::create(IMUFilter::kMadgwick, parameters);
++	size_t imuIdx = 0;
++	if(fx > 0)
++	{
++		if(fy<=0) fy = fx;
++		model = CameraModel(outputName+"_calib", fx, fy, cx, cy, opticalRotation, 0, cv::Size(imgW,imgH));
++		depthFactor = depthFactorArg;
++	}
++	else if(sequenceName.find("freiburg1") != std::string::npos)
+ 	{
+ 		model = CameraModel(outputName+"_calib", 517.3, 516.5, 318.6, 255.3, opticalRotation, 0, cv::Size(640,480));
+ 	}
+@@ -296,6 +345,32 @@ int main(int argc, char * argv[])
+ 
+ 			cameraThread.postUpdate(&data, &cameraInfo);
+ 			cameraInfo.timeTotal = timer.ticks();
++			if(maxFrames>0 && iteration>=maxFrames) break;
++			if(imuFilter)
++			{
++				// feed all IMU samples up to this frame to the Madgwick filter; IMU axes == camera optical frame
++				std::vector<double> last;
++				while(imuIdx < imuRows.size() && imuRows[imuIdx][0] <= data.stamp())
++				{
++					const std::vector<double> & r = imuRows[imuIdx++];
++					IMU raw(cv::Vec3d(r[4],r[5],r[6]), cv::Mat::eye(3,3,CV_64FC1)*1e-6,
++							cv::Vec3d(r[1],r[2],r[3]), cv::Mat::eye(3,3,CV_64FC1)*1e-4, opticalRotation);
++					raw.convertToBaseFrame();
++					imuFilter->update(raw.angularVelocity()[0], raw.angularVelocity()[1], raw.angularVelocity()[2],
++							raw.linearAcceleration()[0], raw.linearAcceleration()[1], raw.linearAcceleration()[2], r[0]);
++					last = r;
++				}
++				if(!last.empty())
++				{
++					IMU raw(cv::Vec3d(last[4],last[5],last[6]), cv::Mat::eye(3,3,CV_64FC1)*1e-6,
++							cv::Vec3d(last[1],last[2],last[3]), cv::Mat::eye(3,3,CV_64FC1)*1e-4, opticalRotation);
++					raw.convertToBaseFrame();
++					double qx,qy,qz,qw; imuFilter->getOrientation(qx,qy,qz,qw);
++					data.setIMU(IMU(cv::Vec4d(qx,qy,qz,qw), cv::Mat::eye(3,3,CV_64FC1)*1e-4,
++							raw.angularVelocity(), raw.angularVelocityCovariance(),
++							raw.linearAcceleration(), raw.linearAccelerationCovariance(), raw.localTransform()));
++				}
++			}
+ 
+ 			OdometryInfo odomInfo;
+ 			Transform pose = odom->process(data, &odomInfo);

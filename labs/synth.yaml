@@ -1,0 +1,44 @@
+# Lab config matching tools/synth_capture (synthetic Isaac Sim Capture with ground truth).
+# board_to_base is the TRUE transform used by the generator: board flat, face up, on a table whose top is at z = -0.20
+# (board z points into the table -> roll 180), corner 0 at x=0.43 y=-0.12.
+lab: synth
+
+charuco:
+  dictionary: DICT_4X4_50
+  squares_x: 7
+  squares_y: 5
+  square_length_m: 0.055
+  marker_length_m: 0.041
+
+board_to_base:
+  xyz: [0.43, -0.12, -0.198]
+  rpy: [180.0, 0.0, 10.0]
+
+robot:
+  model: fr3
+  scan_pose_joints: [0.0, -0.7853981634, 0.0, -2.3561944902, 0.0, 1.5707963268, 0.7853981634]
+  gripper: robotiq_2f85
+  coupling_offset:
+    xyz: [0.0, 0.0, 0.008]
+    rpy: [0.0, 0.0, 0.0]
+
+policy_cameras:
+  wrist:
+    parent_frame: flange
+    pose:
+      xyz: [0.06, 0.0, 0.08]
+      rpy: [0.0, -80.0, 0.0]
+    intrinsics: {width: 640, height: 480, fov: 87.0}
+  front:
+    parent_frame: robot_base
+    pose:
+      xyz: [1.0, 0.0, 0.8]
+      rpy: [0.0, 45.0, 180.0]
+    intrinsics: {width: 640, height: 480, fov: 87.0}
+
+cubes:
+  count: 3
+  size_m: 0.05
+  mass_kg: 0.05
+
+overrides: {}

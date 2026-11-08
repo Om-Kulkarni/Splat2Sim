@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# Host launcher for the r2s CLI. Needs only docker on the host.
+#   default          : run the CLI in the r2s-cli container (docker socket + repo + data dir mounted)
+#   R2S_MODE=uv      : run directly with `uv run` (needs uv + python 3.12 on the host)
+# Env: R2S_DATA (default ~/real2sim-data), R2S_REBUILD=1 to rebuild the r2s-cli image.
+set -euo pipefail
+
+SRC="${BASH_SOURCE[0]}"
+while [ -L "$SRC" ]; do SRC="$(readlink -f "$SRC")"; done
+REPO="$(cd "$(dirname "$SRC")" && pwd)"
+export R2S_DATA="${R2S_DATA:-$HOME/real2sim-data}"
+export R2S_REPO="$REPO"
+export R2S_GIT_REV="$(git -C "$REPO" describe --always --dirty 2>/dev/null || echo unknown)"
+mkdir -p "$R2S_DATA"
+
+if [ "${R2S_MODE:-docker}" = uv ]; then
+  exec uv run --project "$REPO" r2s "$@"
+fi
+
+IMAGE=r2s-cli:latest
+if [ -n "${R2S_REBUILD:-}" ] || ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
+  echo "[r2s] building $IMAGE ..." >&2
+  docker build -q -t "$IMAGE" -f "$REPO/docker/r2s-cli/Dockerfile" "$REPO" >/dev/null
+fi
+
+# The container drives the host daemon, so host paths must be identical inside it.
+DOCKER_BIN="$(command -v docker)"
+PLUGIN=""
+for d in /usr/libexec/docker/cli-plugins /usr/lib/docker/cli-plugins /usr/local/lib/docker/cli-plugins; do
+  [ -x "$d/docker-compose" ] && PLUGIN="$d/docker-compose" && break
+done
+SOCK_GID="$(stat -c %g /var/run/docker.sock)"
+
+args=(run --rm -i --user "$(id -u):$(id -g)" --group-add "$SOCK_GID"
+  -e HOME=/tmp -e R2S_DATA -e R2S_REPO -e R2S_GIT_REV -e PYTHONPATH="$REPO" -e PYTHONDONTWRITEBYTECODE=1
+  -v /var/run/docker.sock:/var/run/docker.sock
+  -v "$DOCKER_BIN:/usr/local/bin/docker:ro"
+  -v "$REPO:$REPO" -v "$R2S_DATA:$R2S_DATA" -w "$PWD")
+[ -t 0 ] && [ -t 1 ] && args+=(-t)
+[ -n "$PLUGIN" ] && args+=(-v "$PLUGIN:/usr/local/lib/docker/cli-plugins/docker-compose:ro")
+# Make the caller's cwd visible (relative capture paths) unless already covered.
+case "$PWD/" in "$REPO/"*|"$R2S_DATA/"*) ;; *) args+=(-v "$PWD:$PWD");; esac
+
+exec docker "${args[@]}" "$IMAGE" "$@"
