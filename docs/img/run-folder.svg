@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 694" width="1000" height="694" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif" role="img" aria-label="Run folder layout"><defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#475569"/></marker></defs><rect x="0.5" y="0.5" width="999" height="693" rx="12" fill="#ffffff" stroke="#d0d7de"/>
+<text x="24" y="36" font-size="20" text-anchor="start" fill="#0f172a" font-weight="700">Run folder contract: runs/&lt;scene&gt;/</text>
+<rect x="24" y="55" width="150" height="24" rx="6" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5"/>
+<text x="36" y="72" font-size="13" text-anchor="start" fill="#0f172a" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-weight="700">run.json</text>
+<text x="190" y="72" font-size="12" text-anchor="start" fill="#334155">capture path, lab, override (staleness)</text>
+<text x="190" y="72" font-size="1" text-anchor="start" fill="#0f172a"></text>
+<text x="190" y="72" font-size="12" fill="#334155">capture path, lab, override (staleness)</text>
+<rect x="24" y="89" width="150" height="24" rx="6" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5"/>
+<text x="36" y="106" font-size="13" text-anchor="start" fill="#0f172a" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-weight="700">options.yaml</text>
+<text x="190" y="106" font-size="12" text-anchor="start" fill="#334155">per-run options: poses, splat, anchor, collision</text>
+<text x="190" y="106" font-size="1" text-anchor="start" fill="#0f172a"></text>
+<text x="190" y="106" font-size="12" fill="#334155">per-run options: poses, splat, anchor, collision</text>
+<rect x="24" y="123" width="150" height="24" rx="6" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5"/>
+<text x="36" y="140" font-size="13" text-anchor="start" fill="#0f172a" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-weight="700">lab.json</text>
+<text x="190" y="140" font-size="12" text-anchor="start" fill="#334155">resolved lab config</text>
+<text x="190" y="140" font-size="1" text-anchor="start" fill="#0f172a"></text>
+<text x="190" y="140" font-size="12" fill="#334155">resolved lab config</text>
+<rect x="24" y="157" width="150" height="24" rx="6" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<text x="36" y="174" font-size="13" text-anchor="start" fill="#0f172a" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-weight="700">frames/</text>
+<text x="190" y="174" font-size="12" text-anchor="start" fill="#334155">stage: ingest</text>
+<text x="60" y="200" font-size="12" text-anchor="start" fill="#334155" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">|_ color/ depth/ frames.csv intrinsics.json imu.csv keyframes.txt meta.json preview/</text>
+<rect x="24" y="221" width="150" height="24" rx="6" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<text x="36" y="238" font-size="13" text-anchor="start" fill="#0f172a" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-weight="700">masks/</text>
+<text x="190" y="238" font-size="12" text-anchor="start" fill="#334155">stage: mask (255 = keep)</text>
+<rect x="24" y="255" width="150" height="24" rx="6" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<text x="36" y="272" font-size="13" text-anchor="start" fill="#0f172a" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-weight="700">poses/</text>
+<text x="190" y="272" font-size="12" text-anchor="start" fill="#334155">stage: poses, anchor</text>
+<text x="60" y="298" font-size="12" text-anchor="start" fill="#334155" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">|_ poses.csv  anchor.json  anchor_overlays/  colmap/ (3DGRUT dataset)</text>
+<rect x="24" y="319" width="150" height="24" rx="6" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+<text x="36" y="336" font-size="13" text-anchor="start" fill="#0f172a" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-weight="700">splat/</text>
+<text x="190" y="336" font-size="12" text-anchor="start" fill="#334155">stage: splat</text>
+<text x="60" y="362" font-size="12" text-anchor="start" fill="#334155" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">|_ scene.ply  metrics.json  heldout/*.png</text>
+<rect x="24" y="383" width="150" height="24" rx="6" fill="#ccfbf1" stroke="#0d9488" stroke-width="1.5"/>
+<text x="36" y="400" font-size="13" text-anchor="start" fill="#0f172a" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-weight="700">collision/</text>
+<text x="190" y="400" font-size="12" text-anchor="start" fill="#334155">stage: collision</text>
+<text x="60" y="426" font-size="12" text-anchor="start" fill="#334155" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">|_ tsdf_mesh.ply collision_mesh.ply/.usd primitives.json collision.usda metrics.json</text>
+<rect x="24" y="447" width="150" height="24" rx="6" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<text x="36" y="464" font-size="13" text-anchor="start" fill="#0f172a" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-weight="700">scene/</text>
+<text x="190" y="464" font-size="12" text-anchor="start" fill="#334155">stage: compose</text>
+<text x="60" y="490" font-size="12" text-anchor="start" fill="#334155" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">|_ scene.usda (/World/Anchor -&gt; splat + collision)</text>
+<rect x="24" y="511" width="150" height="24" rx="6" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<text x="36" y="528" font-size="13" text-anchor="start" fill="#0f172a" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-weight="700">report/</text>
+<text x="190" y="528" font-size="12" text-anchor="start" fill="#334155">stage: report</text>
+<text x="60" y="554" font-size="12" text-anchor="start" fill="#334155" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">|_ summary.json report.md flythrough.mp4 coverage_table.png silhouette/</text>
+<rect x="24" y="575" width="150" height="24" rx="6" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<text x="36" y="592" font-size="13" text-anchor="start" fill="#0f172a" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-weight="700">env/</text>
+<text x="190" y="592" font-size="12" text-anchor="start" fill="#334155">stage: env</text>
+<text x="60" y="618" font-size="12" text-anchor="start" fill="#334155" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">|_ summary.json preview/ pick_lift.gif assets/</text>
+<text x="24" y="668" font-size="12" text-anchor="start" fill="#475569">Each stage also writes &lt;dir&gt;/.done.&lt;stage&gt;.json (timestamp, inputs hash, git rev, run id); poses and anchor share poses/.</text>
+</svg>

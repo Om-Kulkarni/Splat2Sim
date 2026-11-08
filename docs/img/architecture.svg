@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 560" width="1100" height="560" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif" role="img" aria-label="r2s architecture"><defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#475569"/></marker></defs><rect x="0.5" y="0.5" width="1099" height="559" rx="12" fill="#ffffff" stroke="#d0d7de"/>
+<text x="24" y="36" font-size="20" text-anchor="start" fill="#0f172a" font-weight="700">Architecture: launcher, CLI container and stage containers</text>
+<rect x="24" y="70" width="1052" height="470" rx="12" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5" stroke-dasharray="5 4"/>
+<text x="40" y="92" font-size="13" text-anchor="start" fill="#475569" font-weight="700">Host (workstation, docker only)</text>
+<rect x="50" y="120" width="200" height="70" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<text x="150.0" y="150.75" text-anchor="middle" font-size="15" font-weight="700" fill="#0f172a">./r2s</text>
+<text x="150.0" y="169.75" text-anchor="middle" font-size="13" fill="#334155">bash launcher</text>
+<rect x="330" y="110" width="280" height="230" rx="10" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+<text x="470" y="134" font-size="15" text-anchor="middle" fill="#0f172a" font-weight="700">container: r2s-cli</text>
+<text x="470" y="156" font-size="11" text-anchor="middle" fill="#334155">python 3.12-slim + pydantic, pyyaml, numpy</text>
+<rect x="350" y="172" width="240" height="44" rx="8" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5"/>
+<text x="470.0" y="198.2" text-anchor="middle" font-size="12" fill="#0f172a">splat2sim.cli (build/status/doctor)</text>
+<rect x="350" y="226" width="240" height="44" rx="8" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5"/>
+<text x="470.0" y="252.2" text-anchor="middle" font-size="12" fill="#0f172a">docker CLI + compose plugin</text>
+<rect x="350" y="280" width="240" height="44" rx="8" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5"/>
+<text x="470.0" y="306.2" text-anchor="middle" font-size="12" fill="#0f172a">stage registry: stages.py</text>
+<line x1="250" y1="155" x2="328" y2="155" stroke="#475569" stroke-width="1.8" marker-end="url(#a)"/>
+<text x="290" y="145" font-size="11" text-anchor="middle" fill="#475569">docker run</text>
+<rect x="50" y="250" width="200" height="60" rx="8" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+<text x="150.0" y="276.05" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">/var/run/docker.sock</text>
+<text x="150.0" y="293.05" text-anchor="middle" font-size="11" fill="#334155">host daemon</text>
+<path d="M470,340 V372 H150 V312" fill="none" stroke="#d97706" stroke-width="1.8" marker-end="url(#a)"/>
+<text x="320" y="364" font-size="11" text-anchor="middle" fill="#b45309">socket mounted: container drives the host daemon</text>
+<rect x="800" y="110" width="250" height="46" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<text x="925.0" y="137.55" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">ingest</text>
+<rect x="800" y="168" width="250" height="46" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<text x="925.0" y="195.55" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">sam3</text>
+<rect x="800" y="226" width="250" height="46" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<text x="925.0" y="253.55" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">rtabmap</text>
+<rect x="800" y="284" width="250" height="46" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<text x="925.0" y="311.55" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">3dgrut</text>
+<rect x="800" y="342" width="250" height="46" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<text x="925.0" y="369.55" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">collision</text>
+<rect x="800" y="400" width="250" height="46" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<text x="925.0" y="427.55" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">isaac</text>
+<text x="925" y="98" font-size="13" text-anchor="middle" fill="#475569" font-weight="700">per-stage service containers</text>
+<line x1="610" y1="225" x2="720" y2="225" stroke="#16a34a" stroke-width="1.8"/>
+<line x1="720" y1="133" x2="720" y2="423" stroke="#16a34a" stroke-width="1.8"/>
+<line x1="720" y1="133" x2="798" y2="133" stroke="#16a34a" stroke-width="1.8" marker-end="url(#a)"/>
+<line x1="720" y1="191" x2="798" y2="191" stroke="#16a34a" stroke-width="1.8" marker-end="url(#a)"/>
+<line x1="720" y1="249" x2="798" y2="249" stroke="#16a34a" stroke-width="1.8" marker-end="url(#a)"/>
+<line x1="720" y1="307" x2="798" y2="307" stroke="#16a34a" stroke-width="1.8" marker-end="url(#a)"/>
+<line x1="720" y1="365" x2="798" y2="365" stroke="#16a34a" stroke-width="1.8" marker-end="url(#a)"/>
+<line x1="720" y1="423" x2="798" y2="423" stroke="#16a34a" stroke-width="1.8" marker-end="url(#a)"/>
+<text x="615" y="215" font-size="11" text-anchor="start" fill="#475569">compose run</text>
+<rect x="50" y="410" width="640" height="110" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<text x="66" y="432" font-size="13" text-anchor="start" fill="#0f172a" font-weight="700">Bind mounts at identical host paths (all three layers)</text>
+<text x="66" y="456" font-size="12" text-anchor="start" fill="#334155" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">&lt;repo&gt;  -&gt;  &lt;repo&gt;        code is mounted, not baked in: edits need no rebuild</text>
+<text x="66" y="478" font-size="12" text-anchor="start" fill="#334155" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">$R2S_DATA  -&gt;  $R2S_DATA        captures/, runs/, cache/, .env</text>
+<text x="66" y="500" font-size="12" text-anchor="start" fill="#334155" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">capture  -&gt;  /capture (read-only, ingest)   |   run folder -&gt; /runs/&lt;scene&gt;</text>
+<text x="800" y="470" font-size="11" text-anchor="start" fill="#475569">R2S_REBUILD=1 rebuilds the cli image</text>
+<text x="800" y="490" font-size="11" text-anchor="start" fill="#475569">R2S_MODE=uv: no cli container,</text>
+<text x="800" y="506" font-size="11" text-anchor="start" fill="#475569">stages still call docker compose</text>
+</svg>
