@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 430" width="1200" height="430" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif" role="img" aria-label="Collision stage"><defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#475569"/></marker></defs><rect x="0.5" y="0.5" width="1199" height="429" rx="12" fill="#ffffff" stroke="#d0d7de"/>
+<text x="24" y="36" font-size="20" text-anchor="start" fill="#0f172a" font-weight="700">Collision stage: masked depth -&gt; TSDF -&gt; carved mesh + boxes</text>
+<rect x="24" y="90" width="200" height="110" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<text x="124.0" y="131.9" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">masked depth</text>
+<text x="124.0" y="149.9" text-anchor="middle" font-size="12" fill="#334155">masks/ + depth + poses</text>
+<text x="124.0" y="167.9" text-anchor="middle" font-size="12" fill="#334155">every 8th posed frame held out</text>
+<rect x="260" y="90" width="200" height="110" rx="8" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+<text x="360.0" y="131.9" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">TSDF</text>
+<text x="360.0" y="149.9" text-anchor="middle" font-size="12" fill="#334155">Open3D 0.19 CPU</text>
+<text x="360.0" y="167.9" text-anchor="middle" font-size="12" fill="#334155">1 cm voxel, 2.5 m trunc</text>
+<line x1="226" y1="145" x2="258" y2="145" stroke="#475569" stroke-width="1.8" marker-end="url(#a)"/>
+<rect x="496" y="90" width="200" height="110" rx="8" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+<text x="596.0" y="131.9" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">map to anchor frame</text>
+<text x="596.0" y="149.9" text-anchor="middle" font-size="12" fill="#334155">T_base_recon or fallback</text>
+<text x="596.0" y="167.9" text-anchor="middle" font-size="12" fill="#334155">for fitting</text>
+<line x1="462" y1="145" x2="494" y2="145" stroke="#475569" stroke-width="1.8" marker-end="url(#a)"/>
+<rect x="732" y="90" width="200" height="110" rx="8" fill="#ccfbf1" stroke="#0d9488" stroke-width="1.5"/>
+<text x="832.0" y="131.9" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">carve</text>
+<text x="832.0" y="149.9" text-anchor="middle" font-size="12" fill="#334155">table top, small islands</text>
+<text x="832.0" y="167.9" text-anchor="middle" font-size="12" fill="#334155">robot clearance volumes</text>
+<line x1="698" y1="145" x2="730" y2="145" stroke="#475569" stroke-width="1.8" marker-end="url(#a)"/>
+<rect x="968" y="90" width="200" height="110" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<text x="1068.0" y="131.9" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">outputs</text>
+<text x="1068.0" y="149.9" text-anchor="middle" font-size="12" fill="#334155">collision_mesh (60k tri)</text>
+<text x="1068.0" y="167.9" text-anchor="middle" font-size="12" fill="#334155">boxes, collision.usda</text>
+<line x1="934" y1="145" x2="966" y2="145" stroke="#475569" stroke-width="1.8" marker-end="url(#a)"/>
+<rect x="24" y="250" width="540" height="150" rx="10" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5" stroke-dasharray="5 4"/>
+<text x="40" y="274" font-size="13" text-anchor="start" fill="#0f172a" font-weight="700">Table / pedestal fits (RANSAC)</text>
+<text x="40" y="298" font-size="12" text-anchor="start" fill="#334155">table: dominant near-horizontal plane of up-facing vertices</text>
+<text x="40" y="320" font-size="12" text-anchor="start" fill="#334155">box = largest fully observed rectangle, 4 cm thick</text>
+<text x="40" y="342" font-size="12" text-anchor="start" fill="#334155">pedestal: horizontal patch near origin, down to the table top</text>
+<text x="40" y="364" font-size="12" text-anchor="start" fill="#334155">overrides.table_box / pedestal_box replace the fits</text>
+<rect x="600" y="250" width="576" height="150" rx="10" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5" stroke-dasharray="5 4"/>
+<text x="616" y="274" font-size="13" text-anchor="start" fill="#0f172a" font-weight="700">Removed from the mesh (charuco anchor only)</text>
+<text x="616" y="298" font-size="12" text-anchor="start" fill="#334155">cylinder around base axis: radius 0.25 m, z up to 1.2 m</text>
+<text x="616" y="320" font-size="12" text-anchor="start" fill="#334155">capsules around arm + gripper at robot.scan_pose_joints</text>
+<text x="616" y="342" font-size="12" text-anchor="start" fill="#334155">small clutter on the table near the base (carve_clutter_m)</text>
+<text x="616" y="364" font-size="12" text-anchor="start" fill="#334155">boxes are kept; see metrics.json robot_clearance</text>
+</svg>

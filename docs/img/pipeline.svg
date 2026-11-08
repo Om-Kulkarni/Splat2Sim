@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" width="1200" height="520" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif" role="img" aria-label="Splat2Sim pipeline"><defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#475569"/></marker></defs><rect x="0.5" y="0.5" width="1199" height="519" rx="12" fill="#ffffff" stroke="#d0d7de"/>
+<text x="24" y="36" font-size="20" text-anchor="start" fill="#0f172a" font-weight="700">Splat2Sim pipeline</text>
+<text x="24" y="58" font-size="13" text-anchor="start" fill="#475569">each stage = one container; artifacts live in the run folder runs/&lt;scene&gt;/</text>
+<rect x="24" y="100" width="110" height="60" rx="8" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5"/>
+<text x="79.0" y="126.2" text-anchor="middle" font-size="12" font-weight="700" fill="#0f172a">Capture</text>
+<text x="79.0" y="142.2" text-anchor="middle" font-size="10" fill="#334155">RGB-D + IMU</text>
+<rect x="170" y="100" width="170" height="60" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<text x="255.0" y="125.9" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">ingest</text>
+<text x="255.0" y="143.9" text-anchor="middle" font-size="12" fill="#334155">service: ingest</text>
+<text x="255" y="180" font-size="11" text-anchor="middle" fill="#334155" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">frames/</text>
+<rect x="375" y="100" width="170" height="60" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<text x="460.0" y="125.9" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">mask</text>
+<text x="460.0" y="143.9" text-anchor="middle" font-size="12" fill="#334155">service: sam3</text>
+<text x="460" y="180" font-size="11" text-anchor="middle" fill="#334155" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">masks/</text>
+<rect x="580" y="100" width="170" height="60" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<text x="665.0" y="125.9" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">poses</text>
+<text x="665.0" y="143.9" text-anchor="middle" font-size="12" fill="#334155">service: rtabmap</text>
+<text x="665" y="180" font-size="11" text-anchor="middle" fill="#334155" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">poses/poses.csv</text>
+<rect x="785" y="100" width="170" height="60" rx="8" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+<text x="870.0" y="125.9" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">anchor</text>
+<text x="870.0" y="143.9" text-anchor="middle" font-size="12" fill="#334155">service: ingest</text>
+<text x="870" y="180" font-size="11" text-anchor="middle" fill="#334155" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">poses/anchor.json</text>
+<rect x="990" y="100" width="170" height="60" rx="8" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+<text x="1075.0" y="125.9" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">splat</text>
+<text x="1075.0" y="143.9" text-anchor="middle" font-size="12" fill="#334155">service: 3dgrut</text>
+<text x="1075" y="180" font-size="11" text-anchor="middle" fill="#334155" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">splat/scene.ply</text>
+<line x1="134" y1="130" x2="168" y2="130" stroke="#475569" stroke-width="1.8" marker-end="url(#a)"/>
+<line x1="340" y1="130" x2="373" y2="130" stroke="#475569" stroke-width="1.8" marker-end="url(#a)"/>
+<line x1="545" y1="130" x2="578" y2="130" stroke="#475569" stroke-width="1.8" marker-end="url(#a)"/>
+<line x1="750" y1="130" x2="783" y2="130" stroke="#475569" stroke-width="1.8" marker-end="url(#a)"/>
+<line x1="955" y1="130" x2="988" y2="130" stroke="#475569" stroke-width="1.8" marker-end="url(#a)"/>
+<rect x="170" y="300" width="190" height="60" rx="8" fill="#ccfbf1" stroke="#0d9488" stroke-width="1.5"/>
+<text x="265.0" y="325.9" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">collision</text>
+<text x="265.0" y="343.9" text-anchor="middle" font-size="12" fill="#334155">service: collision</text>
+<text x="265" y="380" font-size="11" text-anchor="middle" fill="#334155" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">collision/*.ply,.usda</text>
+<rect x="425" y="300" width="190" height="60" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<text x="520.0" y="325.9" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">compose</text>
+<text x="520.0" y="343.9" text-anchor="middle" font-size="12" fill="#334155">service: isaac</text>
+<text x="520" y="380" font-size="11" text-anchor="middle" fill="#334155" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">scene/scene.usda</text>
+<rect x="680" y="300" width="190" height="60" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<text x="775.0" y="325.9" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">report</text>
+<text x="775.0" y="343.9" text-anchor="middle" font-size="12" fill="#334155">service: isaac + ingest</text>
+<text x="775" y="380" font-size="11" text-anchor="middle" fill="#334155" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">report/report.md</text>
+<rect x="935" y="300" width="190" height="60" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<text x="1030.0" y="325.9" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">env</text>
+<text x="1030.0" y="343.9" text-anchor="middle" font-size="12" fill="#334155">service: isaac</text>
+<text x="1030" y="380" font-size="11" text-anchor="middle" fill="#334155" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">env/summary.json</text>
+<path d="M1020,160 V232 H270 V298" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a)"/>
+<line x1="360" y1="330" x2="423" y2="330" stroke="#475569" stroke-width="1.8" marker-end="url(#a)"/>
+<line x1="615" y1="330" x2="678" y2="330" stroke="#475569" stroke-width="1.8" marker-end="url(#a)"/>
+<line x1="870" y1="330" x2="933" y2="330" stroke="#475569" stroke-width="1.8" marker-end="url(#a)"/>
+<text x="1010" y="224" font-size="11" text-anchor="end" fill="#475569" font-style="italic">collision runs after splat (needs masks + poses + anchor)</text>
+<path d="M945,160 V196 H525 V298" fill="none" stroke="#d97706" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#a)"/>
+<text x="560" y="190" font-size="11" text-anchor="start" fill="#b45309" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">T_base_recon</text>
+<text x="533" y="276" font-size="11" text-anchor="start" fill="#475569">splat + collision + anchor</text>
+<text x="24" y="430" font-size="13" text-anchor="start" fill="#0f172a" font-weight="700">Legend</text>
+<rect x="24" y="444" width="22" height="16" rx="4" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+<text x="54" y="457" font-size="12" text-anchor="start" fill="#334155">reconstruction (CPU/GPU)</text>
+<rect x="254" y="444" width="22" height="16" rx="4" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+<text x="284" y="457" font-size="12" text-anchor="start" fill="#334155">anchoring</text>
+<rect x="484" y="444" width="22" height="16" rx="4" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+<text x="514" y="457" font-size="12" text-anchor="start" fill="#334155">training (GPU)</text>
+<rect x="714" y="444" width="22" height="16" rx="4" fill="#ccfbf1" stroke="#0d9488" stroke-width="1.5"/>
+<text x="744" y="457" font-size="12" text-anchor="start" fill="#334155">collision (CPU)</text>
+<rect x="944" y="444" width="22" height="16" rx="4" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<text x="974" y="457" font-size="12" text-anchor="start" fill="#334155">Isaac Sim / Isaac Lab</text>
+<text x="24" y="492" font-size="12" text-anchor="start" fill="#475569">Stage markers: &lt;dir&gt;/.done.&lt;stage&gt;.json  |  r2s build skips done, reruns stale (inputs hash or upstream rerun) and pending stages</text>
+</svg>

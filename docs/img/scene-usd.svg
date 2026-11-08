@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 520" width="1000" height="520" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif" role="img" aria-label="Scene USD layer structure"><defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#475569"/></marker></defs><rect x="0.5" y="0.5" width="999" height="519" rx="12" fill="#ffffff" stroke="#d0d7de"/>
+<text x="24" y="36" font-size="20" text-anchor="start" fill="#0f172a" font-weight="700">Scene USD: scene/scene.usda</text>
+<rect x="40" y="70" width="300" height="64" rx="8" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5"/>
+<text x="190.0" y="97.9" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">/World</text>
+<text x="190.0" y="115.9" text-anchor="middle" font-size="12" fill="#334155">default prim of scene.usda</text>
+<rect x="140" y="170" width="420" height="70" rx="8" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+<text x="350.0" y="192.55" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">/World/Anchor</text>
+<text x="350.0" y="209.55" text-anchor="middle" font-size="11" fill="#334155">Xform, T_base_recon</text>
+<text x="350.0" y="226.55" text-anchor="middle" font-size="11" fill="#334155">r2s:anchor = "charuco" | "fallback", r2s:anchor_* residuals</text>
+<line x1="190" y1="134" x2="190" y2="168" stroke="#475569" stroke-width="1.8" marker-end="url(#a)"/>
+<path d="M190,134 V150 H190" fill="none" stroke="#475569" stroke-width="1.8"/>
+<rect x="80" y="290" width="300" height="110" rx="8" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+<text x="230.0" y="331.9" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">splat</text>
+<text x="230.0" y="349.9" text-anchor="middle" font-size="12" fill="#334155">ParticleField (3DGUT)</text>
+<text x="230.0" y="367.9" text-anchor="middle" font-size="12" fill="#334155">visual layer, recon frame</text>
+<rect x="420" y="290" width="360" height="150" rx="8" fill="#ccfbf1" stroke="#0d9488" stroke-width="1.5"/>
+<text x="600.0" y="335.55" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">/World/Anchor/Collision</text>
+<text x="600.0" y="352.55" text-anchor="middle" font-size="11" fill="#334155">reference to collision.usda (/Collision)</text>
+<text x="600.0" y="369.55" text-anchor="middle" font-size="11" fill="#334155">Mesh + CollisionAPI + MeshCollisionAPI</text>
+<text x="600.0" y="386.55" text-anchor="middle" font-size="11" fill="#334155">TableBox, PedestalBox (Cube + colliders)</text>
+<text x="600.0" y="403.55" text-anchor="middle" font-size="11" fill="#334155">all visibility = invisible, static</text>
+<path d="M300,240 V265 H230 V288" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a)"/>
+<path d="M400,240 V265 H600 V288" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#a)"/>
+<rect x="640" y="70" width="320" height="64" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5"/>
+<text x="800.0" y="98.05" text-anchor="middle" font-size="13" font-weight="700" fill="#0f172a">Task environment</text>
+<text x="800.0" y="115.05" text-anchor="middle" font-size="11" fill="#334155">{ENV_REGEX_NS}/Scene -&gt; scene.usda</text>
+<line x1="640" y1="102" x2="342" y2="102" stroke="#16a34a" stroke-width="1.8" marker-end="url(#a)"/>
+<text x="490" y="94" font-size="11" text-anchor="middle" fill="#15803d">referenced, anchor at env origin</text>
+<text x="40" y="480" font-size="12" text-anchor="start" fill="#475569">One Anchor transform moves splat and colliders together; both stay in the recon frame until compose.</text>
+</svg>
