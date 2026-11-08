@@ -53,7 +53,7 @@ More in [Architecture](docs/architecture.md). Shooting a Capture: [capture guide
 | Page | Covers |
 |---|---|
 | [Architecture](docs/architecture.md) | `r2s` launcher, containers, compose services, run folder, stages, staleness, repo layout |
-| [Capture guide](docs/capture-guide.md) | How to shoot a Capture |
+| [Capture guide](docs/capture-guide.md) | How to shoot a Capture: OAK-D Pro W (default) or D455, camera settings (`docker/capture/oak_params.yaml`, `R2S_OAK_*`) |
 | [First capture](docs/first-capture.md) | First end-to-end run and how to read the report checks |
 | [Ingest](docs/stages/ingest.md) | Capture formats, `frames/` outputs, keyframes, options |
 | [Mask, poses, splat](docs/stages/poses-and-splat.md) | SLAM, 3DGRUT training, metrics, held-out renders |
